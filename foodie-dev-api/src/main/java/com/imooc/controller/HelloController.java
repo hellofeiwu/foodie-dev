@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class HelloController {
-    final static Logger logger = LoggerFactory.getLogger(HelloController.class);
+    final static Logger log = LoggerFactory.getLogger(HelloController.class);
 
     @GetMapping("/hello")
     public String hello() {
-        logger.debug("debug: hello~");
-        logger.info("info: hello~");
-        logger.warn("warn: hello~");
-        logger.error("error: hello~");
+        log.debug("debug: hello~");
+        log.info("info: hello~");
+        log.warn("warn: hello~");
+        log.error("error: hello~");
 
         return "hello world~";
     }
