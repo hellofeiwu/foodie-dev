@@ -114,6 +114,19 @@ public class PassportController {
         return IMOOCJSONResult.ok(result);
     }
 
+    @ApiOperation(value = "用户退出登录", notes = "用户退出登录", httpMethod = "POST")
+    @PostMapping("/logout")
+    public IMOOCJSONResult logout(@RequestParam String userId,
+                                  HttpServletRequest request,
+                                  HttpServletResponse response
+                                  ) {
+
+        // 清除带有用户信息的cookie
+        CookieUtils.deleteCookie(request, response, "user");
+
+        return IMOOCJSONResult.ok();
+    }
+
     @GetMapping("/setSession")
     public Object setSession(HttpServletRequest request) {
         HttpSession session = request.getSession();
