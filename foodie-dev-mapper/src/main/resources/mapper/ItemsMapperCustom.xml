@@ -16,7 +16,7 @@
     ON
     ic.user_id = u.id
     WHERE
-    ic.item_id = #{paramsMap.itemID}
+    ic.item_id = #{paramsMap.itemId}
     <if test="paramsMap.level != null and paramsMap.level != ''">
       AND
       ic.comment_level = #{paramsMap.level}
