@@ -81,4 +81,27 @@ public class ItemsController extends BaseController {
         PagedGridResult result = itemService.queryPagedComments(itemId, level, page, pageSize);
         return IMOOCJSONResult.ok(result);
     }
+
+    @ApiOperation(value = "搜索商品列表", notes = "搜索商品列表", httpMethod = "GET")
+    @GetMapping("/search")
+    public IMOOCJSONResult search(
+            @ApiParam(name = "keywords", value = "关键字", required = true)
+            @RequestParam String keywords,
+            @ApiParam(name = "sort", value = "排序", required = false)
+            @RequestParam String sort,
+            @ApiParam(name = "page", value = "第几页", required = false)
+            @RequestParam Integer page,
+            @ApiParam(name = "pageSize", value = "每页显示条数", required = false)
+            @RequestParam Integer pageSize
+    ) {
+        if(keywords == null) {
+            return IMOOCJSONResult.errorMsg(null);
+        }
+
+        page = page == null ? 1 : page;
+        pageSize = pageSize == null ? PAGE_SIZE : pageSize;
+
+        PagedGridResult result = itemService.searchItems(keywords, sort, page, pageSize);
+        return IMOOCJSONResult.ok(result);
+    }
 }
