@@ -1,6 +1,7 @@
 package com.imooc.controller;
 
 import com.imooc.pojo.UserAddress;
+import com.imooc.pojo.bo.AddressBO;
 import com.imooc.pojo.vo.ShopcartVO;
 import com.imooc.service.AddressService;
 import com.imooc.utils.IMOOCJSONResult;
@@ -40,5 +41,23 @@ public class AddressController {
         }
         List<UserAddress> list = addressService.queryAll(userId);
         return IMOOCJSONResult.ok(list);
+    }
+
+    @ApiOperation(value = "用户新增地址", notes = "用户新增地址", httpMethod = "POST")
+    @PostMapping("/add")
+    public IMOOCJSONResult add(@RequestBody AddressBO addressBO) {
+        IMOOCJSONResult checkRes = checkAddress(addressBO);
+        if (checkRes.getStatus() != 200) {
+            return checkRes;
+        }
+        addressService.addNewUserAddress(addressBO);
+        return IMOOCJSONResult.ok();
+    }
+
+    private IMOOCJSONResult checkAddress(AddressBO addressBO) {
+        if (StringUtils.isBlank(addressBO.getReceiver())) {
+            return IMOOCJSONResult.errorMsg("收货人不能为空");
+        }
+        return IMOOCJSONResult.ok();
     }
 }
