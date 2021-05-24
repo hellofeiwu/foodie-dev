@@ -68,4 +68,14 @@ public class AddressServiceImpl implements AddressService {
 
         userAddressMapper.updateByPrimaryKeySelective(newAddress);
     }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    @Override
+    public void deleteUserAddress(String userId, String addressId) {
+        UserAddress address = new UserAddress();
+        address.setUserId(userId);
+        address.setId(addressId);
+
+        userAddressMapper.delete(address);
+    }
 }
