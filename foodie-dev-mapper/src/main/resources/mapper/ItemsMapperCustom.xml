@@ -143,4 +143,16 @@
       #{specId}
     </foreach>
   </select>
+
+  <update id="decreaseItemSpecStock">
+    UPDATE
+    items_spec
+    SET
+    stock = stock - #{pendingCounts}
+    WHERE
+    id = #{specId}
+<!--    下面这个AND就是乐观锁，一旦不成立，所有事务链上的数据库操作都会回滚-->
+    AND
+    stock >= #{pendingCounts}
+  </update>
 </mapper>

@@ -40,4 +40,11 @@ public interface AddressService {
      * @param addressId
      */
     public void updateUserAddressToBeDefault(String userId, String addressId);
+
+    /**
+     * 根据用户id和地址id，获取地址信息
+     * @param userId
+     * @param addressId
+     */
+    public UserAddress queryUserAddress(String userId, String addressId);
 }
