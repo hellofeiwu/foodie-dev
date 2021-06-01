@@ -1,6 +1,7 @@
 package com.imooc.service;
 
 import com.imooc.pojo.bo.SubmitOrderBO;
+import com.imooc.pojo.vo.MerchantOrdersVO;
 
 public interface OrderService {
     /**
@@ -8,7 +9,7 @@ public interface OrderService {
      * @param submitOrderBO
      * @return
      */
-    public String createOrder(SubmitOrderBO submitOrderBO);
+    public MerchantOrdersVO createOrder(SubmitOrderBO submitOrderBO);
 
     /**
      * 修改订单状态
