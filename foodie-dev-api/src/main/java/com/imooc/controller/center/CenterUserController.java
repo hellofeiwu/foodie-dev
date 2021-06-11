@@ -6,6 +6,7 @@ import com.imooc.pojo.bo.center.CenterUserBO;
 import com.imooc.resource.FileUpload;
 import com.imooc.service.center.CenterUserService;
 import com.imooc.utils.CookieUtils;
+import com.imooc.utils.DateUtil;
 import com.imooc.utils.IMOOCJSONResult;
 import com.imooc.utils.JsonUtils;
 import io.swagger.annotations.Api;
@@ -79,7 +80,9 @@ public class CenterUserController extends BaseController {
             @ApiParam(name = "userId", value = "用户id", required = true)
             @RequestParam String userId,
             @ApiParam(name = "file", value = "用户头像", required = true)
-            MultipartFile file
+            MultipartFile file,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         // 定义头像保存的地址
         String fileSpace = fileUpload.getImageUserFaceLocation();
@@ -91,6 +94,7 @@ public class CenterUserController extends BaseController {
         }
         // 开始文件上传
         FileOutputStream fileOutputStream = null;
+        String newFileName = "";
         try {
             // 获得上传文件的文件名
             String fileName = file.getOriginalFilename();
@@ -103,7 +107,7 @@ public class CenterUserController extends BaseController {
 
                 // face-{userId}.png
                 // 文件名重组 覆盖式上传，增量式：额外拼接当前时间
-                String newFileName = "face-" + userId + "." + suffix;
+                newFileName = "face-" + userId + "." + suffix;
 
                 // 上传的头像最终保存的位置
                 String finalFacePath = fileSpace + uploadPathPrefix + File.separator + newFileName;
@@ -131,6 +135,27 @@ public class CenterUserController extends BaseController {
                 }
             }
         }
+
+        // 获取图片服务地址
+        String imageServerUrl = fileUpload.getImageServerUrl();
+
+        // 由于浏览器可能存在缓存的情况， 所以在这里，我们需要加上时间戳来保证更新后的图片可以及时刷新
+        String finalUserFaceUrl = imageServerUrl + userId + "/" + newFileName
+                + "?t=" + DateUtil.getCurrentDateString(DateUtil.DATE_PATTERN);
+
+        // 更新用户头像地址到数据库
+        Users user = centerUserService.updateUserFace(userId, finalUserFaceUrl);
+        user.setPassword(null);
+
+        CookieUtils.setCookie(
+                request,
+                response,
+                "user",
+                JsonUtils.objectToJson(user),
+                true
+        );
+
+        // TODO 后续要改，增加令牌token，会整合进redis，分布式会话
 
         return IMOOCJSONResult.ok();
     }
