@@ -3,6 +3,7 @@ package com.imooc.controller.center;
 import com.imooc.controller.BaseController;
 import com.imooc.pojo.Users;
 import com.imooc.pojo.bo.center.CenterUserBO;
+import com.imooc.resource.FileUpload;
 import com.imooc.service.center.CenterUserService;
 import com.imooc.utils.CookieUtils;
 import com.imooc.utils.IMOOCJSONResult;
@@ -35,6 +36,9 @@ import java.util.Map;
 public class CenterUserController extends BaseController {
     @Autowired
     private CenterUserService centerUserService;
+
+    @Autowired
+    private FileUpload fileUpload;
 
     @ApiOperation(value = "修改用户信息", notes = "修改用户信息", httpMethod = "POST")
     @PostMapping("update")
@@ -78,7 +82,7 @@ public class CenterUserController extends BaseController {
             MultipartFile file
     ) {
         // 定义头像保存的地址
-        String fileSpace = IMAGE_USER_FACE_LOCATION;
+        String fileSpace = fileUpload.getImageUserFaceLocation();
         // 在路径上为每一个用户创建一个以userId命名的文件夹，用于区分不同用户上传
         String uploadPathPrefix = File.separator + userId;
 
