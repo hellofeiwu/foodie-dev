@@ -5,7 +5,6 @@ import com.imooc.pojo.ItemsImg;
 import com.imooc.pojo.ItemsParam;
 import com.imooc.pojo.ItemsSpec;
 import com.imooc.pojo.vo.CommentLevelCountsVO;
-import com.imooc.pojo.vo.ItemCommentVO;
 import com.imooc.pojo.vo.ItemInfoVO;
 import com.imooc.pojo.vo.ShopcartVO;
 import com.imooc.service.ItemService;
@@ -77,7 +76,7 @@ public class ItemsController extends BaseController {
         }
 
         page = page == null ? 1 : page;
-        pageSize = pageSize == null ? COMMENT_PAGE_SIZE : pageSize;
+        pageSize = pageSize == null ? COMMON_PAGE_SIZE : pageSize;
 
         PagedGridResult result = itemService.queryPagedComments(itemId, level, page, pageSize);
         return IMOOCJSONResult.ok(result);
