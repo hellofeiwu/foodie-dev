@@ -96,6 +96,22 @@ public class MyOrdersServiceImpl implements MyOrdersService {
         return result == 1;
     }
 
+    @Override
+    public boolean deleteOrder(String orderId) {
+        Orders order = new Orders();
+        order.setId(orderId);
+        order.setIsDelete(YesOrNo.YES.type);
+        order.setUpdatedTime(new Date());
+
+        Example example = new Example(Orders.class);
+        Example.Criteria criteria = example.createCriteria();
+        criteria.andEqualTo("id", orderId);
+
+        int result = ordersMapper.updateByExampleSelective(order, example);
+
+        return result == 1;
+    }
+
     private PagedGridResult setterPagedGrid(List<?> list, Integer page) {
         PageInfo<?> pageList = new PageInfo<>(list);
         PagedGridResult grid = new PagedGridResult();
