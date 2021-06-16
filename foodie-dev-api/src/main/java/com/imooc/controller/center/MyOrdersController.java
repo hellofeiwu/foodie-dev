@@ -59,8 +59,8 @@ public class MyOrdersController extends BaseController {
         return IMOOCJSONResult.ok();
     }
 
-    @ApiOperation(value = "用户确认收货", notes = "用户确认收货", httpMethod = "GET")
-    @GetMapping("/confirmReceive")
+    @ApiOperation(value = "用户确认收货", notes = "用户确认收货", httpMethod = "POST")
+    @PostMapping("/confirmReceive")
     public IMOOCJSONResult confirmReceive(
             @ApiParam(name = "orderId", value = "订单id", required = true)
             @RequestParam String orderId,
