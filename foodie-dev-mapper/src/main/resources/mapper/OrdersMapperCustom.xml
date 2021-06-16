@@ -10,7 +10,11 @@
     <result column="orderStatus" property="orderStatus"/>
     <result column="isComment" property="isComment"/>
 
-    <collection property="subOrderItemList" ofType="com.imooc.pojo.vo.MySubOrderItemVO">
+    <collection property="subOrderItemList"
+                ofType="com.imooc.pojo.vo.MySubOrderItemVO"
+                select="getSubItems"
+                column="orderId">
+<!--因为mybatis在处理多级list时分页会错乱，所以这里子级列表要单独写sql-->
       <result column="itemId" property="itemId"/>
       <result column="itemName" property="itemName"/>
       <result column="itemImg" property="itemImg"/>
@@ -28,7 +32,23 @@
     od.pay_method as payMethod,
     od.real_pay_amount as realPayAmount,
     od.post_amount as postAmount,
-    os.order_status as orderStatus,
+    os.order_status as orderStatus
+    FROM
+    orders od
+    LEFT JOIN
+    order_status os
+    ON od.id = os.order_id
+    WHERE
+    od.user_id = #{paramsMap.userId}
+    AND od.is_delete = 0
+    <if test="paramsMap.orderStatus != null">
+      AND os.order_status = #{paramsMap.orderStatus}
+    </if>
+    ORDER BY od.updated_time ASC
+  </select>
+
+  <select id="getSubItems" resultType="com.imooc.pojo.vo.MySubOrderItemVO" parameterType="String">
+    SELECT
     oi.item_id as itemId,
     oi.item_name as itemName,
     oi.item_img as itemImg,
@@ -37,19 +57,8 @@
     oi.buy_counts as buyCounts,
     oi.price as price
     FROM
-    orders od
-    LEFT JOIN
-    order_status os
-    ON od.id = os.order_id
-    LEFT JOIN
     order_items oi
-    ON od.id = oi.order_id
     WHERE
-    od.user_id = #{paramsMap.userId}
-    AND od.is_delete = 0
-    <if test="paramsMap.orderStatus != null">
-      AND os.order_status = #{paramsMap.orderStatus}
-    </if>
-    ORDER BY od.updated_time ASC
+    oi.order_id = #{orderId}
   </select>
 </mapper>
