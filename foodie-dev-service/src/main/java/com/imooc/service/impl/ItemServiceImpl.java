@@ -11,6 +11,7 @@ import com.imooc.pojo.vo.ItemCommentVO;
 import com.imooc.pojo.vo.SearchItemsVO;
 import com.imooc.pojo.vo.ShopcartVO;
 import com.imooc.service.ItemService;
+import com.imooc.service.impl.center.BaseService;
 import com.imooc.utils.DesensitizationUtil;
 import com.imooc.utils.PagedGridResult;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ import tk.mybatis.mapper.entity.Example;
 import java.util.*;
 
 @Service
-public class ItemServiceImpl implements ItemService {
+public class ItemServiceImpl extends BaseService implements ItemService {
     @Autowired
     private ItemsMapper itemsMapper;
 
@@ -211,16 +212,5 @@ public class ItemServiceImpl implements ItemService {
         if (result != 1) {
             throw new RuntimeException("订单创建失败，原因：库存不足！");
         }
-    }
-
-    private PagedGridResult setterPagedGrid(List<?> list, Integer page) {
-        PageInfo<?> pageList = new PageInfo<>(list);
-        PagedGridResult grid = new PagedGridResult();
-        grid.setPage(page);
-        grid.setRows(list);
-        grid.setTotal(pageList.getPages());
-        grid.setRecords(pageList.getTotal());
-
-        return grid;
     }
 }
