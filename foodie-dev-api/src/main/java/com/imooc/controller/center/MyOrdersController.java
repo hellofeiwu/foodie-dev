@@ -110,4 +110,25 @@ public class MyOrdersController extends BaseController {
         OrderStatusCountsVO result = myOrdersService.getOrderStatusCounts(userId);
         return IMOOCJSONResult.ok(result);
     }
+
+    @ApiOperation(value = "查询订单动向", notes = "查询订单动向", httpMethod = "POST")
+    @PostMapping("/trend")
+    public IMOOCJSONResult trend(
+            @ApiParam(name = "userId", value = "用户id", required = true)
+            @RequestParam String userId,
+            @ApiParam(name = "page", value = "第几页", required = false)
+            @RequestParam Integer page,
+            @ApiParam(name = "pageSize", value = "每页显示条数", required = false)
+            @RequestParam Integer pageSize
+    ) {
+        if(userId == null) {
+            return IMOOCJSONResult.errorMsg(null);
+        }
+
+        page = page == null ? 1 : page;
+        pageSize = pageSize == null ? COMMON_PAGE_SIZE : pageSize;
+
+        PagedGridResult result = myOrdersService.getOrdersTrend(userId, page, pageSize);
+        return IMOOCJSONResult.ok(result);
+    }
 }
