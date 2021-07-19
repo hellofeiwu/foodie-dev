@@ -1,11 +1,16 @@
 package com.imooc.pojo.vo;
 
+import com.imooc.pojo.bo.ShopcartBO;
+
+import java.util.List;
+
 public class MerchantOrdersVO {
     private String merchantOrderId;
     private String merchantUserId;
     private Integer amount;
     private Integer payMethod;
     private String returnUrl;
+    private List<ShopcartBO> toBeRemovedShopcartList;
 
     public String getMerchantOrderId() {
         return merchantOrderId;
@@ -45,5 +50,13 @@ public class MerchantOrdersVO {
 
     public void setReturnUrl(String returnUrl) {
         this.returnUrl = returnUrl;
+    }
+
+    public List<ShopcartBO> getToBeRemovedShopcartList() {
+        return toBeRemovedShopcartList;
+    }
+
+    public void setToBeRemovedShopcartList(List<ShopcartBO> toBeRemovedShopcartList) {
+        this.toBeRemovedShopcartList = toBeRemovedShopcartList;
     }
 }

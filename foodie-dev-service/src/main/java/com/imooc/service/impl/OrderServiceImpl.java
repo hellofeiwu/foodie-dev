@@ -7,6 +7,7 @@ import com.imooc.mapper.OrderItemsMapper;
 import com.imooc.mapper.OrderStatusMapper;
 import com.imooc.mapper.OrdersMapper;
 import com.imooc.pojo.*;
+import com.imooc.pojo.bo.ShopcartBO;
 import com.imooc.pojo.bo.SubmitOrderBO;
 import com.imooc.pojo.vo.MerchantOrdersVO;
 import com.imooc.service.AddressService;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import tk.mybatis.mapper.entity.Example;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -48,7 +50,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     @Override
-    public MerchantOrdersVO createOrder(SubmitOrderBO submitOrderBO) {
+    public MerchantOrdersVO createOrder(List<ShopcartBO> shopcartList, SubmitOrderBO submitOrderBO) {
         String userId = submitOrderBO.getUserId();
         String itemSpecIds = submitOrderBO.getItemSpecIds();
         String addressId = submitOrderBO.getAddressId();
@@ -84,9 +86,13 @@ public class OrderServiceImpl implements OrderService {
         String itemSpecIdArr[] = itemSpecIds.split(",");
         Integer totalAmount = 0;
         Integer realPayAmount = 0;
+
+        List<ShopcartBO> toBeRemovedShopcartList = new ArrayList<>();
         for (String itemSpecId : itemSpecIdArr) {
-            // TODO 整合redis后，商品购买的数量重新从redis的购物车中获取
-            Integer buyCounts = 1;
+            // 整合redis后，商品购买的数量重新从redis的购物车中获取
+            ShopcartBO shopcartBO = getBuyCountsFromShopcart(shopcartList, itemSpecId);
+            Integer buyCounts = shopcartBO.getBuyCounts();
+            toBeRemovedShopcartList.add(shopcartBO);
 
             // 2.1 根据规格id，查询规格的具体信息，主要获取价格
             ItemsSpec itemSpec = itemService.queryItemSpecById(itemSpecId);
@@ -136,6 +142,8 @@ public class OrderServiceImpl implements OrderService {
         merchantOrdersVO.setAmount(realPayAmount + postAmount);
         merchantOrdersVO.setPayMethod(payMethod);
 
+        merchantOrdersVO.setToBeRemovedShopcartList(toBeRemovedShopcartList);
+
         return merchantOrdersVO;
     }
 
@@ -183,5 +191,21 @@ public class OrderServiceImpl implements OrderService {
         orderStatus.setOrderStatus(OrderStatusEnum.CLOSE.type);
         orderStatus.setCloseTime(new Date());
         orderStatusMapper.updateByPrimaryKeySelective(orderStatus);
+    }
+
+    /**
+     * 从redis中的购物车里获取商品，目的获取buyCounts
+     * @param shopcartList
+     * @param itemSpecId
+     * @return
+     */
+    private ShopcartBO getBuyCountsFromShopcart(List<ShopcartBO> shopcartList, String itemSpecId){
+        for (ShopcartBO item : shopcartList) {
+            if (item.getSpecId().equals(itemSpecId)) {
+                return item;
+            }
+        }
+
+        return null;
     }
 }

@@ -1,12 +1,10 @@
 package com.imooc.controller;
 
 import com.imooc.pojo.Users;
+import com.imooc.pojo.bo.ShopcartBO;
 import com.imooc.pojo.bo.UserBO;
 import com.imooc.service.UserService;
-import com.imooc.utils.CookieUtils;
-import com.imooc.utils.IMOOCJSONResult;
-import com.imooc.utils.JsonUtils;
-import com.imooc.utils.MD5Utils;
+import com.imooc.utils.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -17,11 +15,16 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
+import java.util.List;
 
 @Api(value = "注册登录", tags = {"用于注册登录的相关接口"})
 @RestController
 @RequestMapping("passport")
-public class PassportController {
+public class PassportController extends BaseController {
+    @Autowired
+    private RedisOperator redisOperator;
+
     @Autowired
     private UserService userService;
 
@@ -114,7 +117,8 @@ public class PassportController {
         );
 
         // TODO 生成用户token，存入redis会话
-        // TODO 同步购物车数据
+        // 同步购物车数据
+        syncShopcartData(result.getId(), request, response);
         return IMOOCJSONResult.ok(result);
     }
 
@@ -128,6 +132,9 @@ public class PassportController {
         // 清除带有用户信息的cookie
         CookieUtils.deleteCookie(request, response, "user");
 
+        // 用户退出登录，需要清空购物车
+        CookieUtils.deleteCookie(request, response, FOODIE_SHOPCART);
+
         return IMOOCJSONResult.ok();
     }
 
@@ -138,5 +145,50 @@ public class PassportController {
         session.setMaxInactiveInterval(3600);
         session.getAttribute("userInfo");
         return "ok";
+    }
+
+    /**
+     * 注册登录成功后，同步cookie和redis中的购物车数据
+     */
+    private void syncShopcartData(String userId, HttpServletRequest request, HttpServletResponse response) {
+        String shopcartJsonRedis = redisOperator.get("shopcart:" + userId);
+        String shopcartStrCookie = CookieUtils.getCookieValue(request, FOODIE_SHOPCART);
+
+        if (StringUtils.isBlank(shopcartJsonRedis)) {
+            if (StringUtils.isNotBlank(shopcartStrCookie)) {
+                redisOperator.set("shopcart:" + userId, shopcartStrCookie);
+            }
+        }else {
+            if (StringUtils.isNotBlank(shopcartStrCookie)) {
+                List<ShopcartBO> shopcartBOListRedis = JsonUtils.jsonToList(shopcartJsonRedis, ShopcartBO.class);
+                List<ShopcartBO> shopcartBOListCookie = JsonUtils.jsonToList(shopcartStrCookie, ShopcartBO.class);
+
+                List<ShopcartBO> pendingDeleteList = new ArrayList<>();
+
+                for (ShopcartBO redisItem : shopcartBOListRedis) {
+                    for (ShopcartBO cookieItem : shopcartBOListCookie) {
+                        if (cookieItem.getSpecId().equals(redisItem.getSpecId())) {
+                            // Cookie覆盖redis购买数量，不累加，参考京东
+                            redisItem.setBuyCounts(cookieItem.getBuyCounts());
+                            pendingDeleteList.add(cookieItem);
+                        }
+                    }
+                }
+
+                // 从现有cookie中删除 交集中的商品
+                shopcartBOListCookie.removeAll(pendingDeleteList);
+
+                // 合并两个list
+                shopcartBOListRedis.addAll(shopcartBOListCookie);
+
+                // 更新到 redis 和 cookie
+                redisOperator.set("shopcart:" + userId, JsonUtils.objectToJson(shopcartBOListRedis));
+                CookieUtils.setCookie(request, response, FOODIE_SHOPCART, JsonUtils.objectToJson(shopcartBOListRedis), true);
+
+            }else {
+                CookieUtils.setCookie(request, response, FOODIE_SHOPCART, shopcartJsonRedis, true);
+            }
+        }
+
     }
 }

@@ -79,7 +79,22 @@ public class ShopcartController {
         if(StringUtils.isBlank(userId) || StringUtils.isBlank(itemSpecId)) {
             return IMOOCJSONResult.errorMsg("userId or itemSpecId is blank");
         }
-        // TODO 用户在页面删除购物车中的商品数据，如果此时用户已经登陆，则需要同步删除后端购物车中的商品
+        // 用户在页面删除购物车中的商品数据，如果此时用户已经登陆，则需要同步删除后端购物车中的商品
+
+        String shopcartJson = redisOperator.get("shopcart:" + userId);
+        List<ShopcartBO> shopcartList = new ArrayList<>();
+        if (StringUtils.isNotBlank(shopcartJson)) {
+            shopcartList = JsonUtils.jsonToList(shopcartJson, ShopcartBO.class);
+            for (ShopcartBO sc : shopcartList) {
+                String tmpSpecId = sc.getSpecId();
+                if (tmpSpecId.equals(itemSpecId)) {
+                    shopcartList.remove(sc);
+                    break;
+                }
+            }
+
+            redisOperator.set("shopcart:" + userId, JsonUtils.objectToJson(shopcartList));
+        }
 
         return IMOOCJSONResult.ok();
     }
