@@ -3,13 +3,14 @@ package com.imooc.controller;
 import com.imooc.pojo.Users;
 import com.imooc.pojo.bo.ShopcartBO;
 import com.imooc.pojo.bo.UserBO;
+import com.imooc.pojo.vo.UsersVO;
 import com.imooc.service.UserService;
 import com.imooc.utils.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -17,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Api(value = "注册登录", tags = {"用于注册登录的相关接口"})
 @RestController
@@ -48,7 +50,11 @@ public class PassportController extends BaseController {
 
     @ApiOperation(value = "用户注册", notes = "用户注册", httpMethod = "POST")
     @PostMapping("/regist")
-    public IMOOCJSONResult regist(@RequestBody UserBO userBO) {
+    public IMOOCJSONResult regist(
+            @RequestBody UserBO userBO,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
         String username = userBO.getUsername();
         String password = userBO.getPassword();
         String confirmPwd = userBO.getConfirmPassword();
@@ -78,10 +84,21 @@ public class PassportController extends BaseController {
         }
 
         // 4. 实现注册
-        userService.createUser(userBO);
+        Users user = userService.createUser(userBO);
 
-        // TODO 生成用户token，存入redis会话
-        // TODO 同步购物车数据
+        // 生成用户token，存入redis会话
+        UsersVO usersVO = convertUsersVO(user);
+
+        CookieUtils.setCookie(
+                request,
+                response,
+                "user",
+                JsonUtils.objectToJson(usersVO),
+                true
+                );
+
+        // 同步购物车数据
+        syncShopcartData(user.getId(), request, response);
         return IMOOCJSONResult.ok();
     }
 
@@ -107,16 +124,17 @@ public class PassportController extends BaseController {
         }
 
         result.setPassword(null);
+        // 生成用户token，存入redis会话
+        UsersVO usersVO = convertUsersVO(result);
 
         CookieUtils.setCookie(
                 request,
                 response,
                 "user",
-                JsonUtils.objectToJson(result),
+                JsonUtils.objectToJson(usersVO),
                 true
         );
 
-        // TODO 生成用户token，存入redis会话
         // 同步购物车数据
         syncShopcartData(result.getId(), request, response);
         return IMOOCJSONResult.ok(result);
@@ -131,6 +149,9 @@ public class PassportController extends BaseController {
 
         // 清除带有用户信息的cookie
         CookieUtils.deleteCookie(request, response, "user");
+
+        // 清除redis中的token
+        redisOperator.del(REDIS_USER_TOKEN + ":" + userId);
 
         // 用户退出登录，需要清空购物车
         CookieUtils.deleteCookie(request, response, FOODIE_SHOPCART);
@@ -190,5 +211,14 @@ public class PassportController extends BaseController {
             }
         }
 
+    }
+
+    private UsersVO convertUsersVO(Users user){
+        String uniqueToken = UUID.randomUUID().toString().trim();
+        redisOperator.set(REDIS_USER_TOKEN + ":" + user.getId(), uniqueToken);
+        UsersVO usersVO = new UsersVO();
+        BeanUtils.copyProperties(user, usersVO);
+        usersVO.setUniqueToken(uniqueToken);
+        return usersVO;
     }
 }
