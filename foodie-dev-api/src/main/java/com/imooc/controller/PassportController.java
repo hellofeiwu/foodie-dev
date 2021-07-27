@@ -212,13 +212,4 @@ public class PassportController extends BaseController {
         }
 
     }
-
-    private UsersVO convertUsersVO(Users user){
-        String uniqueToken = UUID.randomUUID().toString().trim();
-        redisOperator.set(REDIS_USER_TOKEN + ":" + user.getId(), uniqueToken);
-        UsersVO usersVO = new UsersVO();
-        BeanUtils.copyProperties(user, usersVO);
-        usersVO.setUniqueToken(uniqueToken);
-        return usersVO;
-    }
 }

@@ -1,15 +1,23 @@
 package com.imooc.controller;
 
 import com.imooc.pojo.Orders;
+import com.imooc.pojo.Users;
+import com.imooc.pojo.vo.UsersVO;
 import com.imooc.service.center.MyOrdersService;
 import com.imooc.utils.IMOOCJSONResult;
+import com.imooc.utils.RedisOperator;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
+import java.util.UUID;
 
 @RestController
 public class BaseController {
+    @Autowired
+    private RedisOperator redisOperator;
+
     @Autowired
     private MyOrdersService myOrdersService;
 
@@ -43,5 +51,14 @@ public class BaseController {
             return IMOOCJSONResult.errorMsg("订单不存在！");
         }
         return IMOOCJSONResult.ok(order);
+    }
+
+    public UsersVO convertUsersVO(Users user) {
+        String uniqueToken = UUID.randomUUID().toString().trim();
+        redisOperator.set(REDIS_USER_TOKEN + ":" + user.getId(), uniqueToken);
+        UsersVO usersVO = new UsersVO();
+        BeanUtils.copyProperties(user, usersVO);
+        usersVO.setUniqueToken(uniqueToken);
+        return usersVO;
     }
 }
