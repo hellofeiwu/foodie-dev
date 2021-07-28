@@ -54,7 +54,7 @@ public class BaseController {
     }
 
     public UsersVO convertUsersVO(Users user) {
-        String uniqueToken = UUID.randomUUID().toString().trim();
+        String uniqueToken = UUID.randomUUID().toString().trim(); // 这里加trim是因为第三方工具有时候会在结尾加空格
         redisOperator.set(REDIS_USER_TOKEN + ":" + user.getId(), uniqueToken);
         UsersVO usersVO = new UsersVO();
         BeanUtils.copyProperties(user, usersVO);
