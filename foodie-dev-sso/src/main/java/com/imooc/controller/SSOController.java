@@ -38,7 +38,35 @@ public class SSOController {
                         HttpServletRequest request,
                         HttpServletResponse response) {
         model.addAttribute("returnUrl", returnUrl);
+
+        String userTicket = getCookie(request, COOKIE_USER_TICKET);
+        if (verifyUserTicket(userTicket)) {
+            String tmpTicket = createTmpTicket();
+            return "redirect:" + returnUrl + "?tmpTicket=" + tmpTicket;
+        }
+
         return "login";
+    }
+
+    private boolean verifyUserTicket(String userTicket) {
+        // 0. 验证 CAS 门票不能为空
+        if (StringUtils.isBlank(userTicket)) {
+            return false;
+        }
+
+        // 1. 验证 CAS 门票是否有效
+        String userId = redisOperator.get(REDIS_USER_TICKET + ":" + userTicket);
+        if (StringUtils.isBlank(userId)) {
+            return false;
+        }
+
+        // 2. 验证门票对应的user会话是否存在
+        String userVOStr = redisOperator.get(REDIS_USER_TOKEN + ":" + userId);
+        if (StringUtils.isBlank(userVOStr)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -93,7 +121,7 @@ public class SSOController {
         setCookie(COOKIE_USER_TICKET, userTicket, response);
 
         // 4. 全局门票关联userId，存入redis中，代表这个用户有门票了，可以在各个景区游玩
-        redisOperator.set(REDIS_USER_TICKET + ":" + result.getId(), userTicket);
+        redisOperator.set(REDIS_USER_TICKET + ":" + userTicket, result.getId());
 
         // 5. 生成临时票据，回跳到调用端网站，是由 CAS 端所签发的一个一次性的临时ticket
         String tmpTicket = createTmpTicket();
@@ -115,6 +143,59 @@ public class SSOController {
 
     }
 
+    @PostMapping("/verifyTmpTicket")
+    @ResponseBody // 将这个接口变成restful的形式
+    public IMOOCJSONResult verifyTmpTicket(String tmpTicket,
+                                           HttpServletRequest request,
+                                           HttpServletResponse response) throws Exception {
+        // 使用一次性临时票据来验证用户是否登录，如果登录了，把用户会话信息返回给调用站点
+        // 使用完毕后，需要销毁临时票据
+        String tmpTicketValue = redisOperator.get(REDIS_TMP_TICKET + ":" + tmpTicket);
+        if (StringUtils.isBlank(tmpTicketValue)) {
+            return IMOOCJSONResult.errorMsg("用户票据异常");
+        }
+
+        // 0. 如果临时票据OK，则需要销毁，并且拿到CAS端cookie中的全局userTicket，以此再获取用户会话
+        if (!tmpTicketValue.equals(MD5Utils.getMD5Str(tmpTicket))) {
+            return IMOOCJSONResult.errorMsg("用户票据异常");
+        }else {
+            // 销毁临时票据
+            redisOperator.del(REDIS_TMP_TICKET + ":" + tmpTicket);
+        }
+
+        // 1. 验证并获取用户的userTicket
+        String userTicket = getCookie(request, COOKIE_USER_TICKET);
+        String userId = redisOperator.get(REDIS_USER_TICKET + ":" + userTicket);
+        if (StringUtils.isBlank(userId)) {
+            return IMOOCJSONResult.errorMsg("用户票据异常");
+        }
+
+        // 2. 验证门票对应的用户会话是否存在
+        String userVOStr = redisOperator.get(REDIS_USER_TOKEN + ":" + userId);
+        if (StringUtils.isBlank(userVOStr)) {
+            return IMOOCJSONResult.errorMsg("用户票据异常");
+        }
+
+        // 验证成功，返回OK，携带用户会话
+        return IMOOCJSONResult.ok(JsonUtils.jsonToPojo(userVOStr, UsersVO.class));
+    }
+
+    @PostMapping("/logout")
+    @ResponseBody
+    public IMOOCJSONResult logout(String userId, HttpServletRequest request, HttpServletResponse response) {
+        // 0. 获取 CAS 中的用户门票
+        String userTicket = getCookie(request, COOKIE_USER_TICKET);
+
+        // 1. 清除userTicket票据， redis/cookie
+        deleteCookie(COOKIE_USER_TICKET, response);
+        redisOperator.del(REDIS_USER_TICKET + ":" + userTicket);
+
+        // 2. 清除用户全局会话
+        redisOperator.del(REDIS_USER_TOKEN + ":" + userId);
+
+        return IMOOCJSONResult.ok();
+    }
+
     /**
      * 创建临时票据
      * @return
@@ -133,6 +214,28 @@ public class SSOController {
         Cookie cookie = new Cookie(key, val);
         cookie.setDomain("sso.com");
         cookie.setPath("/");
+        response.addCookie(cookie);
+    }
+
+    private String getCookie(HttpServletRequest request, String key) {
+        Cookie[] cookieList = request.getCookies();
+        if (cookieList == null || StringUtils.isBlank(key)) {
+            return null;
+        }
+
+        for (Cookie cookie : cookieList) {
+            if (cookie.getName().equals(key)) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    private void deleteCookie(String key, HttpServletResponse response) {
+        Cookie cookie = new Cookie(key, null);
+        cookie.setDomain("sso.com");
+        cookie.setPath("/");
+        cookie.setMaxAge(-1);
         response.addCookie(cookie);
     }
 }
