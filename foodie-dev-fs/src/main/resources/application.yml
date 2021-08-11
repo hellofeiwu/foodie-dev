@@ -1,0 +1,33 @@
+############################################################
+#
+# web访问端口号  约定：8066
+#
+############################################################
+server:
+  port: 8066
+  tomcat:
+    uri-encoding: UTF-8
+  max-http-header-size: 80KB
+
+############################################################
+#
+# 配置数据源信息
+#
+############################################################
+spring:
+  datasource:                                           # 数据源的相关配置
+    type: com.zaxxer.hikari.HikariDataSource          # 数据源类型：HikariCP
+    driver-class-name: com.mysql.cj.jdbc.Driver          # mysql驱动
+    url: jdbc:mysql://localhost:3306/foodie-shop-dev?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true
+    username: root
+    password: root
+
+############################################################
+#
+# fdfs 配置
+#
+############################################################
+fdfs:
+  connet-timeout: 30  # 连接的超时时间
+  so-timeout: 30      # 读取的超时时间
+  tracker-list: 192.168.0.101:22122   # tracker服务所在的ip地址和端口号
