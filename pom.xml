@@ -17,6 +17,8 @@
         <module>foodie-dev-search</module>
         <module>foodie-dev-fs</module>
         <module>rabbitmq-api</module>
+        <module>rabbit-producer</module>
+        <module>rabbit-consumer</module>
     </modules>
     <packaging>pom</packaging>
 

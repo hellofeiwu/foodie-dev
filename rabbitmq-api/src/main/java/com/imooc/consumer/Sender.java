@@ -38,6 +38,8 @@ public class Sender {
 
         for (int i=0; i<5; i++) {
             String msg = "Hello World RabbitMQ " + i;
+            // 这里第一个参数是exchange，设置为""，但其实rabbitmq会使用 AMQP default 这个exchange
+            // 第二个参数是routing key, 在exchange, queue, routing key这三者没有做绑定的情况下，routing key和 queue name要相同
             channel.basicPublish("", queueName, properties, msg.getBytes(StandardCharsets.UTF_8));
         }
     }

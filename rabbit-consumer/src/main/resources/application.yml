@@ -1,0 +1,24 @@
+server:
+  port: 8002
+
+spring:
+  datasource: # 数据源的相关配置
+    type: com.zaxxer.hikari.HikariDataSource          # 数据源类型：HikariCP
+    driver-class-name: com.mysql.cj.jdbc.Driver          # mysql驱动
+    url: jdbc:mysql://localhost:3306/foodie-shop-dev?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true
+    username: root
+    password: root
+  rabbitmq:
+    address: 127.0.0.1:5672
+    username: guest
+    password: guest
+    virtual-host: /
+    connection-timeout: 15000
+
+    # 启用消息确认模式
+    listener:
+      simple:
+        acknowledge-mode: manual
+        concurrency: 5
+        max-concurrency: 10
+        prefetch: 1
